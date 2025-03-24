@@ -1,0 +1,5 @@
+.air.toml
+.vscode/
+bin/
+main
+tmp/
