@@ -6,14 +6,12 @@ import (
 	"time"
 
 	"github.com/arjkashyap/erlic.ai/internal/config"
+	"github.com/arjkashyap/erlic.ai/internal/logger"
+	_ "github.com/lib/pq"
 )
 
 func Connect(cfg *config.Config) (*sql.DB, error) {
-<<<<<<< HEAD
-	// establish connection with db
-=======
-
->>>>>>> 71dd5c4 (Added/modified files to new branch: develop)
+	logger.Logger.Info("Connecting to DB")
 	db, err := sql.Open("postgres", cfg.DB.DSN)
 	if err != nil {
 		return nil, err
@@ -37,5 +35,6 @@ func Connect(cfg *config.Config) (*sql.DB, error) {
 		return nil, err
 	}
 
+	logger.Logger.Info("Connection to DB - Success")
 	return db, nil
 }

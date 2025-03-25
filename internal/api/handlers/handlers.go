@@ -5,6 +5,7 @@ import (
 )
 
 type Handlers struct {
+	HealthCheck *HealthCheckHandler
 	UserHandler *UserHandler
 }
 

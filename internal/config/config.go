@@ -24,14 +24,14 @@ type Config struct {
 func NewConfig() *Config {
 
 	db_conf := DBConfig{
-		DSN:          env.GetString("DSN", "postgres://postgres:password@localhost:5432/database"),
+		DSN:          env.GetString("DSN", "postgres://postgres:password@localhost:5432/erlic?sslmode=disable"),
 		MaxOpenConns: 25,
 		MaxIdleConns: 25,
 		MaxIdleTime:  "15m",
 	}
 
 	return &Config{
-		Port: env.GetString("PORT", "8080"),
+		Port: env.GetString("PORT", ":8080"),
 		Env:  env.GetString("ENV", "DEV"),
 		DB:   db_conf,
 	}
@@ -41,6 +41,6 @@ func (c *Config) InitializeHandlers(r *repositories.Repositories) *handlers.Hand
 	return handlers.NewHandlers(r.UserRepository)
 }
 
-func (c *Config) InitializeRepositories(db *sql.DB) repositories.Repositories {
-	return *repositories.NewRepositories(db)
+func (c *Config) InitializeRepositories(db *sql.DB) *repositories.Repositories {
+	return repositories.NewRepositories(db)
 }
