@@ -3,21 +3,29 @@ package env
 import (
 	"os"
 	"strconv"
+
+	"github.com/arjkashyap/erlic.ai/internal/logger"
+	"github.com/joho/godotenv"
 )
 
-func GetString(key string, fallback string) string {
-	val, ok := os.LookupEnv(key)
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		logger.Logger.Error("Error loading .env file")
+	}
+}
 
-	if !ok {
+func GetString(key string, fallback string) string {
+	val := os.Getenv(key)
+	if len(val) == 0 {
 		return fallback
 	}
-
 	return val
 }
 
 func GetInt(key string, fallback int) int {
-	val, ok := os.LookupEnv(key)
-	if !ok {
+	val := os.Getenv(key)
+	if len(val) == 0 {
 		return fallback
 	}
 
@@ -28,4 +36,18 @@ func GetInt(key string, fallback int) int {
 	}
 
 	return valAsInt
+}
+
+func GetBool(key string, fallback bool) bool {
+	val := os.Getenv(key)
+	if len(val) == 0 {
+		return fallback
+	}
+
+	boolVal, err := strconv.ParseBool(val)
+	if err != nil {
+		return fallback
+	}
+
+	return boolVal
 }
