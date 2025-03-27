@@ -14,6 +14,7 @@ import (
 	"github.com/arjkashyap/erlic.ai/internal/api/middleware"
 	"github.com/arjkashyap/erlic.ai/internal/api/routes"
 	"github.com/arjkashyap/erlic.ai/internal/config"
+	"github.com/arjkashyap/erlic.ai/internal/logger"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -78,7 +79,7 @@ func (a *API) Run() error {
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
-
+	logger.Logger.Info("Server started on %s", srv.Addr)
 	err = <-shutdownError
 	if err != nil {
 		return err
