@@ -2,6 +2,8 @@ module github.com/arjkashyap/erlic.ai
 
 go 1.24.1
 
+require golang.org/x/text v0.23.0
+
 require (
 	cloud.google.com/go/compute v1.20.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect

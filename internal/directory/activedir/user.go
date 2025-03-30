@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/arjkashyap/erlic.ai/internal/directory"
+	"golang.org/x/text/encoding/unicode"
 
 	"github.com/go-ldap/ldap/v3"
 )
@@ -17,8 +18,90 @@ func (m *ADManager) GetUser(ctx context.Context, username string) (*directory.Us
 	return user, nil
 }
 
-// CreateUser creates a new user in Active Directory
 func (m *ADManager) CreateUser(ctx context.Context, user *directory.User) error {
+	default_pass := "BigH3ro@101_ComplexP@ss!"
+	conn, err := m.getConnection()
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	defer m.releaseConnection(conn)
+
+	if err := m.bind(conn); err != nil {
+		return err
+	}
+
+	fmt.Println("Creating new user request")
+
+	dn := fmt.Sprintf("CN=%s,CN=Users,%s", user.Username, m.baseDN)
+	fmt.Println("DN = " + dn)
+
+	addReq := ldap.NewAddRequest(dn, []ldap.Control{})
+	addReq.Attribute("objectClass", []string{"top", "organizationalPerson", "user", "person"})
+	addReq.Attribute("name", []string{user.Username})
+	addReq.Attribute("sAMAccountName", []string{user.Username})
+	addReq.Attribute("userAccountControl", []string{fmt.Sprintf("%d", 0x0202)}) // Disabled account at first
+	addReq.Attribute("userPrincipalName", []string{user.Email})
+	addReq.Attribute("accountExpires", []string{fmt.Sprintf("%d", 0x00000000)})
+
+	// Add name attributes
+	if user.FirstName != "" {
+		addReq.Attribute("givenName", []string{user.FirstName})
+	}
+	if user.LastName != "" {
+		addReq.Attribute("sn", []string{user.LastName})
+	}
+	if user.DisplayName != "" {
+		addReq.Attribute("displayName", []string{user.DisplayName})
+	}
+
+	if user.Department != "" {
+		addReq.Attribute("department", []string{user.Department})
+	}
+	if user.Title != "" {
+		addReq.Attribute("title", []string{user.Title})
+	}
+	if user.Description != "" {
+		addReq.Attribute("description", []string{user.Description})
+	}
+
+	if err := conn.Add(addReq); err != nil {
+		fmt.Println(err)
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+
+	fmt.Println("User is created")
+
+	// Setting up user password
+	quotedPassword := fmt.Sprintf("\"%s\"", default_pass)
+	utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	pwdEncoded, err := utf16le.NewEncoder().String(quotedPassword)
+	if err != nil {
+		return err
+	}
+
+	modReq := ldap.NewModifyRequest(dn, nil)
+	modReq.Replace("unicodePwd", []string{pwdEncoded})
+
+	if err := conn.Modify(modReq); err != nil {
+		fmt.Println("Error with PasswordModify operation:", err)
+		return err
+
+	}
+
+	fmt.Println("User Password Set")
+
+	// Enable the account by setting userAccountControl to 512 (normal account)
+	enableReq := ldap.NewModifyRequest(dn, nil)
+	enableReq.Replace("userAccountControl", []string{"512"})
+	if err := conn.Modify(enableReq); err != nil {
+		fmt.Println("Error enabling user account:", err)
+		return err
+	}
+
+	fmt.Println("User account enabled")
 	return nil
 }
 

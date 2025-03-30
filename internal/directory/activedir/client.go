@@ -2,7 +2,9 @@ package activedir
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -13,24 +15,27 @@ import (
 
 // ADManager implements the DirectoryManager interface for Active Directory
 type ADManager struct {
-	ldapURL      string
-	baseDN       string
-	bindUsername string
-	bindPassword string
-	useTLS       bool
-	connPool     sync.Pool
+	ldapURL        string
+	baseDN         string
+	bindUsername   string
+	bindPassword   string
+	serverHostName string
+	useTLS         bool
+	connPool       sync.Pool
+	caCertPath     string
 }
 
 // NewADManager creates a new Active Directory manager
-func NewADManager(ldapURL, baseDN, bindUsername, bindPassword string, useTLS bool) *ADManager {
+func NewADManager(ldapURL, baseDN, bindUsername, bindPassword string, serverHostName string, useTLS bool, caCertPath string) *ADManager {
 	adm := &ADManager{
-		ldapURL:      ldapURL,
-		baseDN:       baseDN,
-		bindUsername: bindUsername,
-		bindPassword: bindPassword,
-		useTLS:       useTLS,
+		ldapURL:        ldapURL,
+		baseDN:         baseDN,
+		bindUsername:   bindUsername,
+		bindPassword:   bindPassword,
+		serverHostName: serverHostName,
+		useTLS:         useTLS,
+		caCertPath:     caCertPath,
 	}
-
 	// Initialize connection pool
 	adm.connPool = sync.Pool{
 		New: func() interface{} {
@@ -41,7 +46,6 @@ func NewADManager(ldapURL, baseDN, bindUsername, bindPassword string, useTLS boo
 			return conn
 		},
 	}
-
 	return adm
 }
 
@@ -51,24 +55,55 @@ func (m *ADManager) dial() (*ldap.Conn, error) {
 	var err error
 
 	if m.useTLS {
-		// Skip verification for testing - in production, use proper certificates
-		tlsConfig := &tls.Config{InsecureSkipVerify: true}
-		conn, err = ldap.DialTLS("tcp", m.ldapURL, tlsConfig) // TODO: replace this depracated function
+		host := m.ldapURL
+		fmt.Println("Using TLS with host: " + host)
+
+		caCertPool, err := m.loadCACert()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load CA cert: %w", err)
+		}
+
+		tlsConfig := &tls.Config{
+			RootCAs:            caCertPool,
+			ServerName:         m.serverHostName,
+			InsecureSkipVerify: false,
+		}
+
+		conn, err = ldap.DialURL(m.ldapURL, ldap.DialWithTLSConfig(tlsConfig))
+		if err != nil {
+			return nil, fmt.Errorf("LDAP TLS connection error: %w", err)
+		}
 	} else {
 		conn, err = ldap.DialURL(m.ldapURL)
+		if err != nil {
+			return nil, fmt.Errorf("LDAP connection error: %w", err)
+		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("LDAP connection error: %w", err)
-	}
-
+	fmt.Println("Connection Established with LDAP server")
 	conn.SetTimeout(5 * time.Second)
-
 	return conn, nil
+}
+
+func (m ADManager) loadCACert() (*x509.CertPool, error) {
+	fmt.Println("Importing CA Cert")
+	caCert, err := os.ReadFile(m.caCertPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CA certificate: %w", err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	ok := caCertPool.AppendCertsFromPEM(caCert)
+	if !ok {
+		return nil, fmt.Errorf("failed to append CA certificate")
+	}
+
+	return caCertPool, nil
 }
 
 // gets a connection from the pool or creates a new one
 func (m *ADManager) getConnection() (*ldap.Conn, error) {
+	fmt.Println("getConnection() - called")
 	conn := m.connPool.Get()
 	if conn == nil {
 		return m.dial()
