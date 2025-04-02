@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/arjkashyap/erlic.ai/internal/api/utils"
 	"github.com/arjkashyap/erlic.ai/internal/logger"
+	"github.com/arjkashyap/erlic.ai/internal/utils"
 	"go.uber.org/zap"
 )
 

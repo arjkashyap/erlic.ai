@@ -2,14 +2,12 @@ package activedir
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/arjkashyap/erlic.ai/internal/directory"
-
+	"github.com/arjkashyap/erlic.ai/internal/utils"
 	"github.com/go-ldap/ldap/v3"
 )
 
@@ -58,7 +56,7 @@ func (m *ADManager) dial() (*ldap.Conn, error) {
 		host := m.ldapURL
 		fmt.Println("Using TLS with host: " + host)
 
-		caCertPool, err := m.loadCACert()
+		caCertPool, err := utils.LoadCACert(m.caCertPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load CA cert: %w", err)
 		}
@@ -83,22 +81,6 @@ func (m *ADManager) dial() (*ldap.Conn, error) {
 	fmt.Println("Connection Established with LDAP server")
 	conn.SetTimeout(5 * time.Second)
 	return conn, nil
-}
-
-func (m ADManager) loadCACert() (*x509.CertPool, error) {
-	fmt.Println("Importing CA Cert")
-	caCert, err := os.ReadFile(m.caCertPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read CA certificate: %w", err)
-	}
-
-	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(caCert)
-	if !ok {
-		return nil, fmt.Errorf("failed to append CA certificate")
-	}
-
-	return caCertPool, nil
 }
 
 // gets a connection from the pool or creates a new one

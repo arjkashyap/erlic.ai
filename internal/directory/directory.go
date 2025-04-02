@@ -33,6 +33,33 @@ type User struct {
 	Groups      []string
 }
 
+type ADAttribute string
+
+// constants for each AD attribute
+const (
+	ADAttributeUsername    ADAttribute = "sAMAccountName"
+	ADAttributeFirstName   ADAttribute = "givenName"
+	ADAttributeLastName    ADAttribute = "sn"
+	ADAttributeDisplayName ADAttribute = "displayName"
+	ADAttributeEmail       ADAttribute = "mail"
+	ADAttributeDepartment  ADAttribute = "department"
+	ADAttributeTitle       ADAttribute = "title"
+	ADAttributeDescription ADAttribute = "description"
+	ADAttributeEnabled     ADAttribute = "userAccountControl"
+)
+
+// UserAttributeMapping maps User struct fields to AD attributes
+var UserAttributeMapping = map[string]ADAttribute{
+	"Username":    ADAttributeUsername,
+	"FirstName":   ADAttributeFirstName,
+	"LastName":    ADAttributeLastName,
+	"DisplayName": ADAttributeDisplayName,
+	"Email":       ADAttributeEmail,
+	"Department":  ADAttributeDepartment,
+	"Title":       ADAttributeTitle,
+	"Description": ADAttributeDescription,
+}
+
 // Directory Group
 type Group struct {
 	Name        string

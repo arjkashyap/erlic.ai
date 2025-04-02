@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/arjkashyap/erlic.ai/internal/customerrors"
+	"github.com/arjkashyap/erlic.ai/internal/db/repositories"
 	"github.com/arjkashyap/erlic.ai/internal/env"
 	"github.com/arjkashyap/erlic.ai/internal/logger"
+	"github.com/arjkashyap/erlic.ai/internal/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth"
@@ -15,12 +18,13 @@ import (
 )
 
 type AuthHandler struct {
+	UserReposityory *repositories.UserRepository
 }
 
-func NewAuthHandler() *AuthHandler {
+func NewAuthHandler(ur *repositories.UserRepository) *AuthHandler {
 	setupAuthProviders()
 
-	return &AuthHandler{}
+	return &AuthHandler{UserReposityory: ur}
 }
 
 func setupAuthProviders() {
@@ -43,6 +47,7 @@ func setupAuthProviders() {
 	store.Options.HttpOnly = true
 	store.Options.Secure = isProd
 	store.Options.SameSite = http.SameSiteLaxMode
+	store.Options.Domain = ""
 
 	gothic.Store = store
 
@@ -54,14 +59,9 @@ func setupAuthProviders() {
 
 func (ah *AuthHandler) AuthInitiate(w http.ResponseWriter, r *http.Request) {
 	provider := chi.URLParam(r, "provider")
-	r = r.WithContext(context.WithValue(r.Context(), gothic.ProviderParamKey, provider))
+	r = r.WithContext(context.WithValue(context.Background(), gothic.ProviderParamKey, provider))
 
-	if gothUser, err := gothic.CompleteUserAuth(w, r); err == nil {
-		logger.Logger.Info(gothUser)
-		http.Redirect(w, r, "http://localhost:5173/dashboard", http.StatusFound)
-	} else {
-		gothic.BeginAuthHandler(w, r)
-	}
+	gothic.BeginAuthHandler(w, r)
 }
 
 func (ah *AuthHandler) AuthCallback(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +75,43 @@ func (ah *AuthHandler) AuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Logger.Info("User authenticated", "user", user)
+	new_user := utils.ConvertGothUserToAppUser(user)
+
+	// Persist User
+	existing_usr, err := ah.UserReposityory.GetUserByEmail(new_user.Email)
+	if err != nil {
+		err_msg := fmt.Sprintf("Error Fetching user from storage. \nError: %s", err)
+		logger.Logger.Error(err_msg)
+		customerrors.ErrorResponse(w, r, http.StatusInternalServerError, err_msg)
+		return
+	}
+	if existing_usr == nil {
+		if err := ah.UserReposityory.Create(new_user); err != nil {
+			logger.Logger.Error("Unable to add user to Database error %s", err)
+			customerrors.ErrorResponse(w, r, http.StatusInternalServerError, fmt.Sprintf("Error Adding User to Storage. \nError: %s", err))
+			return
+		}
+		logger.Logger.Info("New user created", "email", new_user.Email)
+
+	}
+
+	// Session Management
+	session, err := gothic.Store.Get(r, gothic.SessionName)
+	if err != nil {
+		logger.Logger.Error("Failed to get session", "error", err)
+		http.Error(w, fmt.Sprintf("Session error: %v", err), http.StatusInternalServerError)
+		return
+	}
+	// Store essential info in the session
+	session.Values["username"] = new_user.Username
+	session.Values["email"] = new_user.Email
+
+	err = session.Save(r, w)
+	if err != nil {
+		logger.Logger.Error("Failed to save session", "error", err)
+		http.Error(w, fmt.Sprintf("Session save error: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	http.Redirect(w, r, "http://localhost:5173", http.StatusFound)
 }

@@ -14,6 +14,6 @@ func NewHandlers(ur *repositories.UserRepository) *Handlers {
 	return &Handlers{
 		HealthCheck: NewHealthCheckHandler(),
 		UserHandler: NewUserHandler(ur),
-		AuthHandler: NewAuthHandler(),
+		AuthHandler: NewAuthHandler(ur),
 	}
 }
