@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
+import { SiGithub } from "react-icons/si"
+import { FaMicrosoft } from "react-icons/fa"
 
 export default function LoginPage() {
   return (
@@ -39,6 +42,35 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Button className="w-full bg-purple-700 hover:bg-purple-800">Sign In</Button>
+          
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="http://localhost:8080/api/auth/google">
+                <FcGoogle className="mr-2 h-4 w-4" />
+                <span className="sr-only">Google</span>
+              </Link>
+            </Button>
+            <Button variant="outline" className="w-full" >
+              <FaMicrosoft className="mr-2 h-4 w-4 text-blue-600" />
+              <span className="sr-only">Microsoft</span>
+            </Button>
+            <Button variant="outline" className="w-full" >
+              <SiGithub className="mr-2 h-4 w-4" />
+              <span className="sr-only">GitHub</span>
+            </Button>
+          </div>
+
           <div className="text-center text-sm">
             Don't have an account?{" "}
             <Link href="/signup" className="text-purple-700 hover:underline">

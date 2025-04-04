@@ -5,15 +5,19 @@ import (
 )
 
 type Handlers struct {
-	HealthCheck *HealthCheckHandler
-	UserHandler *UserHandler
-	AuthHandler *AuthHandler
+	HealthCheck      *HealthCheckHandler
+	UserHandler      *UserHandler
+	AuthHandler      *AuthHandler
+	DashboardHandler *DashboardHandler
+	ProfileHandler   *ProfileHandler
 }
 
 func NewHandlers(ur *repositories.UserRepository) *Handlers {
 	return &Handlers{
-		HealthCheck: NewHealthCheckHandler(),
-		UserHandler: NewUserHandler(ur),
-		AuthHandler: NewAuthHandler(ur),
+		HealthCheck:      NewHealthCheckHandler(),
+		UserHandler:      NewUserHandler(ur),
+		AuthHandler:      NewAuthHandler(ur),
+		DashboardHandler: NewDashboardHandler(),
+		ProfileHandler:   NewProfileHandler(ur),
 	}
 }

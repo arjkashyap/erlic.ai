@@ -23,7 +23,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	}
 }
 
-func (ur *UserRepository) Create(user *models.User) error {
+func (ur *UserRepository) Create(user *models.User) (*models.User, error) {
 	logger.Logger.Info("Adding user to storage")
 	query := `
     INSERT INTO users (
@@ -49,13 +49,51 @@ func (ur *UserRepository) Create(user *models.User) error {
 	).Scan(&user.Id, &user.CreatedAt)
 
 	if err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
+		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
 	logger.Logger.Info("added user to store",
 		"username", user.Username,
 		"id", user.Id)
-	return nil
+	return user, nil
+}
+
+func (ur *UserRepository) GetUserByID(id int64) (*models.User, error) {
+	user := &models.User{}
+	query := `
+        SELECT id, first_name, last_name, username, email, organization,
+               provider, provider_user_id, avatar_url, verified_email, created_at
+        FROM users
+        WHERE id = $1`
+
+	err := ur.db.QueryRow(query, id).Scan(
+		&user.Id,
+		&user.FirstName,
+		&user.LastName,
+		&user.Username,
+		&user.Email,
+		&user.Organization,
+		&user.Provider,
+		&user.ProviderUserID,
+		&user.AvatarURL,
+		&user.VerifiedEmail,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			logger.Logger.Warn("User not found by ID", "id", id)
+			return nil, sql.ErrNoRows // Indicate not found clearly
+		}
+		logger.Logger.Error("Error fetching user by ID", "id", id, "error", err)
+		return nil, fmt.Errorf("error fetching user by ID %d: %w", id, err)
+	}
+
+	// Construct FullName after scanning FirstName and LastName
+	user.FullName = user.FirstName + " " + user.LastName
+
+	logger.Logger.Debug("Found user by ID", "id", user.Id)
+	return user, nil
 }
 
 func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {

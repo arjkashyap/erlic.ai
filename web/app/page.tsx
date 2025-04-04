@@ -1,8 +1,13 @@
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, CheckCircle, Shield, Zap, MessageSquare } from "lucide-react"
 
+
 export default function LandingPage() {
+
+
+  
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -46,17 +51,13 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link href="/signup">
-                <Button size="lg" className="bg-white text-purple-700 hover:bg-purple-100">
+                <Button size="lg" className="bg-white text-purple-700 hover:bg-purple-100 transition-all duration-200 hover:scale-105 hover:shadow-lg">
                   Get Started <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="#demo">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-white border-white hover:bg-white hover:text-purple-700"
-                >
-                  See Demo
+                <Button size="lg" className="bg-white text-purple-700 hover:bg-purple-100 transition-all duration-200 hover:scale-105 hover:shadow-lg">
+                  See Demo <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
             </div>
