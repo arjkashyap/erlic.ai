@@ -4,6 +4,7 @@ import (
 	"github.com/arjkashyap/erlic.ai/internal/api"
 	"github.com/arjkashyap/erlic.ai/internal/config"
 	"github.com/arjkashyap/erlic.ai/internal/db"
+	"github.com/arjkashyap/erlic.ai/internal/initializer"
 	"github.com/arjkashyap/erlic.ai/internal/logger"
 	"go.uber.org/zap"
 )
@@ -21,7 +22,7 @@ func main() {
 
 	defer db.Close()
 
-	hr := config.InitializeHandlers(config.InitializeRepositories(db))
+	hr := initializer.InitializeHandlers(initializer.InitializeRepositories(db), config)
 	srv := api.NewAPI(logger.Logger, config, hr)
 
 	err = srv.Run()

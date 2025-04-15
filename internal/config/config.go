@@ -1,10 +1,6 @@
 package config
 
 import (
-	"database/sql"
-
-	"github.com/arjkashyap/erlic.ai/internal/api/handlers"
-	"github.com/arjkashyap/erlic.ai/internal/db/repositories"
 	"github.com/arjkashyap/erlic.ai/internal/env"
 )
 
@@ -16,13 +12,13 @@ type DBConfig struct {
 }
 
 type Config struct {
-	Port string
-	Env  string
-	DB   DBConfig
+	Port       string
+	Env        string
+	MLProvider string
+	DB         DBConfig
 }
 
 func NewConfig() *Config {
-
 	db_conf := DBConfig{
 		DSN:          env.GetString("DSN", "postgres://postgres:password@localhost:5432/erlic?sslmode=disable"),
 		MaxOpenConns: 25,
@@ -31,16 +27,9 @@ func NewConfig() *Config {
 	}
 
 	return &Config{
-		Port: env.GetString("PORT", ":8080"),
-		Env:  env.GetString("ENV", "DEV"),
-		DB:   db_conf,
+		Port:       env.GetString("PORT", ":8080"),
+		Env:        env.GetString("ENV", "DEV"),
+		MLProvider: env.GetString("ML_PROVIDER", "vertex"),
+		DB:         db_conf,
 	}
-}
-
-func (c *Config) InitializeHandlers(r *repositories.Repositories) *handlers.Handlers {
-	return handlers.NewHandlers(r.UserRepository)
-}
-
-func (c *Config) InitializeRepositories(db *sql.DB) *repositories.Repositories {
-	return repositories.NewRepositories(db)
 }

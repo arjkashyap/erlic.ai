@@ -6,7 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/arjkashyap/erlic.ai/internal/directory"
+	"github.com/arjkashyap/erlic.ai/internal/logger"
+	"github.com/arjkashyap/erlic.ai/internal/service/directory"
 	"github.com/arjkashyap/erlic.ai/internal/utils"
 	"github.com/go-ldap/ldap/v3"
 )
@@ -24,7 +25,7 @@ type ADManager struct {
 }
 
 // NewADManager creates a new Active Directory manager
-func NewADManager(ldapURL, baseDN, bindUsername, bindPassword string, serverHostName string, useTLS bool, caCertPath string) *ADManager {
+func NewADManager(ldapURL string, baseDN string, bindUsername string, bindPassword string, serverHostName string, useTLS bool, caCertPath string) *ADManager {
 	adm := &ADManager{
 		ldapURL:        ldapURL,
 		baseDN:         baseDN,
@@ -54,7 +55,7 @@ func (m *ADManager) dial() (*ldap.Conn, error) {
 
 	if m.useTLS {
 		host := m.ldapURL
-		fmt.Println("Using TLS with host: " + host)
+		logger.Logger.Info("Using TLS with host: " + host)
 
 		caCertPool, err := utils.LoadCACert(m.caCertPath)
 		if err != nil {
@@ -78,14 +79,14 @@ func (m *ADManager) dial() (*ldap.Conn, error) {
 		}
 	}
 
-	fmt.Println("Connection Established with LDAP server")
+	logger.Logger.Info("Connection Established with LDAP server")
 	conn.SetTimeout(5 * time.Second)
 	return conn, nil
 }
 
 // gets a connection from the pool or creates a new one
 func (m *ADManager) getConnection() (*ldap.Conn, error) {
-	fmt.Println("getConnection() - called")
+	logger.Logger.Info("getConnection() - called")
 	conn := m.connPool.Get()
 	if conn == nil {
 		return m.dial()

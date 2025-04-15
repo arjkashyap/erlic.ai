@@ -6,9 +6,10 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/arjkashyap/erlic.ai/internal/directory"
 	"golang.org/x/text/encoding/unicode"
 
+	"github.com/arjkashyap/erlic.ai/internal/logger"
+	"github.com/arjkashyap/erlic.ai/internal/service/directory"
 	"github.com/go-ldap/ldap/v3"
 )
 
@@ -17,7 +18,7 @@ func (m *ADManager) CreateUser(ctx context.Context, user *directory.User) error 
 	conn, err := m.getConnection()
 
 	if err != nil {
-		fmt.Println(err)
+		logger.Logger.Error(err)
 		return err
 	}
 
@@ -27,10 +28,10 @@ func (m *ADManager) CreateUser(ctx context.Context, user *directory.User) error 
 		return err
 	}
 
-	fmt.Println("Creating new user request")
+	logger.Logger.Info("Creating new user request")
 
 	dn := fmt.Sprintf("CN=%s,CN=Users,%s", user.Username, m.baseDN)
-	fmt.Println("DN = " + dn)
+	logger.Logger.Info("DN = " + dn)
 
 	addReq := ldap.NewAddRequest(dn, []ldap.Control{})
 	addReq.Attribute("objectClass", []string{"top", "organizationalPerson", "user", "person"})
@@ -63,11 +64,11 @@ func (m *ADManager) CreateUser(ctx context.Context, user *directory.User) error 
 	}
 
 	if err := conn.Add(addReq); err != nil {
-		fmt.Println(err)
+		logger.Logger.Error(err)
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	fmt.Println("User is created")
+	logger.Logger.Info("User is created")
 
 	// Setting up user password
 	quotedPassword := fmt.Sprintf("\"%s\"", default_pass)
@@ -81,22 +82,22 @@ func (m *ADManager) CreateUser(ctx context.Context, user *directory.User) error 
 	modReq.Replace("unicodePwd", []string{pwdEncoded})
 
 	if err := conn.Modify(modReq); err != nil {
-		fmt.Println("Error with PasswordModify operation:", err)
+		logger.Logger.Error("Error with PasswordModify operation:", err)
 		return err
 
 	}
 
-	fmt.Println("User Password Set")
+	logger.Logger.Info("User Password Set")
 
 	// Enable the account by setting userAccountControl to 512 (normal account)
 	enableReq := ldap.NewModifyRequest(dn, nil)
 	enableReq.Replace("userAccountControl", []string{"512"})
 	if err := conn.Modify(enableReq); err != nil {
-		fmt.Println("Error enabling user account:", err)
+		logger.Logger.Error("Error enabling user account:", err)
 		return err
 	}
 
-	fmt.Println("User account enabled")
+	logger.Logger.Info("User account enabled")
 	return nil
 }
 
@@ -236,7 +237,7 @@ func (m *ADManager) DeleteUser(ctx context.Context, username string) error {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 
-	fmt.Printf("User %s deleted from AD %s", username, m.serverHostName)
+	logger.Logger.Info("User %s deleted from AD %s", username, m.serverHostName)
 	return nil
 }
 
@@ -272,7 +273,7 @@ func (m *ADManager) ResetUserPassword(ctx context.Context, username, newPassword
 		return fmt.Errorf("failed to reset password: %w", err)
 	}
 
-	fmt.Printf("Password reset successful for user: %s\n", username)
+	logger.Logger.Info("Password reset successful for user: %s", username)
 	return nil
 }
 

@@ -32,6 +32,10 @@ func SetupRoutes(r *chi.Mux, h *handlers.Handlers) {
 			r.Route("/profile", func(r chi.Router) {
 				r.Get("/", h.ProfileHandler.GetProfile)
 			})
+
+			r.Route("/chat", func(r chi.Router) {
+				r.Post("/prompt", h.ChatHandler.HandlePrompt)
+			})
 		})
 	})
 }

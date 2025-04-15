@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/arjkashyap/erlic.ai/internal/directory"
+	"github.com/arjkashyap/erlic.ai/internal/service/directory"
 	"github.com/go-ldap/ldap/v3"
 )
 
